@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DptoLibre - App del Propietario</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --brand-blue: #0055DD;
+            --brand-dark: #0A142F;
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #cbd5e1;
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden;
+        }
+
+        .mobile-shell {
+            width: 100%;
+            height: 100vh;
+            max-width: 414px;
+            margin: 0 auto;
+            background: #ffffff;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.2);
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        .animate-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Estilo Chat Burbujas */
+        .animate-bubble { animation: bubbleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes bubbleIn { 
+            from { opacity: 0; transform: translateY(15px) scale(0.95); } 
+            to { opacity: 1; transform: translateY(0) scale(1); } 
+        }
+
+        .bot-bubble {
+            @apply bg-slate-50 border border-slate-100 p-4 rounded-tr-[2rem] rounded-br-[2rem] rounded-bl-[2rem] shadow-sm max-w-[85%] text-sm font-medium leading-relaxed text-slate-700;
+        }
+
+        .user-bubble {
+            @apply bg-[#0055DD] text-white p-4 rounded-tl-[2rem] rounded-bl-[2rem] rounded-br-[2rem] shadow-lg max-w-[80%] text-sm font-bold ml-auto;
+        }
+
+        .typing-dot {
+            width: 6px; height: 6px; background: #94a3b8; border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+        .passport-gradient {
+            background: linear-gradient(135deg, #0D1B4B 0%, #0055DD 100%);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Icon = ({ name, size = 20, className = "" }) => {
+            useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [name, size, className]);
+            return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
+        };
+
+        const Logo = ({ light = false }) => (
+            <div className={`flex flex-col items-center ${light ? 'text-white' : 'text-[#0D1B4B]'}`}>
+                <svg width="40" viewBox="0 0 32 40" fill="none">
+                    <path d="M16 0L32 6.4V33.6L16 40V6.4L16 0Z" fill={light ? "white" : "#0055DD"} fillOpacity="0.3"/>
+                    <path d="M0 6.4L16 0V33.6L0 40V6.4Z" fill={light ? "white" : "#0055DD"}/>
+                </svg>
+                <div className="text-sm font-extrabold tracking-tighter mt-1">dpto <span className="font-light">libre</span></div>
+            </div>
+        );
+
+        function OwnerApp() {
+            // VISTAS: login, role_selection, check_active, val_dni, val_face, chat_propiedad, asignar_admin, home_owner
+            const [view, setView] = useState('login');
+            const [hasActiveAccount, setHasActiveAccount] = useState(false);
+            const [isScanning, setIsScanning] = useState(false);
+            
+            // Estados para el Chat IA de Propiedad
+            const [chatStep, setChatStep] = useState(0);
+            const [isTyping, setIsTyping] = useState(false);
+            const [chatInput, setChatInput] = useState("");
+            const [propData, setPropData] = useState({ address: '', features: '', adminQuery: '', adminFound: null });
+            const chatScrollRef = useRef(null);
+
+            // Mock de Administradores Registrados
+            const registeredAdmins = [
+                { name: "Inmobiliaria Raíces", email: "admin@raices.com", phone: "+54 351 4000000" },
+                { name: "Gestiones del Sur", email: "contacto@sur.com", phone: "+54 351 5000000" }
+            ];
+
+            useEffect(() => {
+                if (chatScrollRef.current) chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+            }, [chatStep, isTyping]);
+
+            // --- AVANCE DEL CHAT ---
+            const advanceChat = (nextStep, delay = 800) => {
+                setIsTyping(true);
+                setTimeout(() => {
+                    setIsTyping(false);
+                    setChatStep(nextStep);
+                }, delay);
+            };
+
+            const handleChatSend = () => {
+                if (!chatInput.trim()) return;
+                const val = chatInput.trim();
+                setChatInput("");
+
+                if (chatStep === 0) {
+                    setPropData(p => ({ ...p, address: val }));
+                    advanceChat(1);
+                } else if (chatStep === 1) {
+                    setPropData(p => ({ ...p, features: val }));
+                    advanceChat(2);
+                } else if (chatStep === 4) {
+                    setPropData(p => ({ ...p, adminQuery: val }));
+                    setIsTyping(true);
+                    setTimeout(() => {
+                        setIsTyping(false);
+                        const found = registeredAdmins.find(a => a.email.toLowerCase() === val.toLowerCase() || a.phone.includes(val));
+                        setPropData(p => ({ ...p, adminFound: found || null }));
+                        setChatStep(5);
+                    }, 1200);
+                }
+            };
+
+            // --- VISTA 1: LOGIN ---
+            const LoginView = () => (
+                <div className="mobile-shell bg-white flex flex-col p-8 justify-center animate-in text-center">
+                    <Logo />
+                    <h1 className="text-2xl font-black mt-8 text-[#0D1B4B] uppercase tracking-tighter">Portal Propietarios</h1>
+                    <p className="text-slate-400 text-xs mt-2 font-medium">Cobrá tus alquileres de forma segura.</p>
+
+                    <div className="space-y-3 w-full mt-10">
+                        <button onClick={() => setView('role_selection')} className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold border border-slate-200 text-slate-700 bg-white shadow-sm active:scale-95 transition-all text-sm">
+                            <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-1 .67-2.26 1.07-3.71 1.07-2.87 0-5.3-1.94-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.11c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.09H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.91l3.66-2.8z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.09l3.66 2.8c.86-2.59 3.29-4.51 6.16-4.51z" fill="#EA4335"/></svg>
+                            Continuar con Google
+                        </button>
+                        <button onClick={() => setView('role_selection')} className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold bg-black text-white shadow-lg active:scale-95 transition-all text-sm">
+                            <Icon name="apple" size={18} className="fill-white"/> Continuar con Apple
+                        </button>
+                    </div>
+                </div>
+            );
+
+            // --- VISTA 2: SELECCIÓN DE ROL ---
+            const RoleSelectionView = () => (
+                <div className="mobile-shell bg-white flex flex-col p-8 animate-in justify-center">
+                    <h2 className="text-2xl font-black text-[#0D1B4B] tracking-tight mb-2 text-center uppercase">¿Cuál es tu rol?</h2>
+                    <p className="text-slate-400 text-xs text-center mb-8">Seleccioná tu perfil principal.</p>
+                    <div className="space-y-4">
+                        {[
+                            { id: 'propietario', label: 'Propietario', desc: 'Tengo inmuebles para cobrar', icon: 'shield' },
+                            { id: 'inquilino', label: 'Inquilino', desc: 'Busco alquilar unidades', icon: 'user' }
+                        ].map(r => (
+                            <button 
+                                key={r.id} 
+                                onClick={() => {
+                                    if (r.id === 'propietario') setView('check_active');
+                                    else alert("Esta app está configurada para propietarios.");
+                                }} 
+                                className="w-full p-6 border-2 border-slate-100 rounded-3xl text-left flex items-center gap-4 hover:border-[#0055DD] hover:bg-blue-50/30 transition-all group"
+                            >
+                                <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-[#0055DD] group-hover:text-white transition-all">
+                                    <Icon name={r.icon} size={22} />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="font-black text-[#0D1B4B] text-sm uppercase tracking-tight">{r.label}</h4>
+                                    <p className="text-[10px] text-slate-400 font-medium">{r.desc}</p>
+                                </div>
+                                <Icon name="chevron-right" size={18} className="text-slate-300" />
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            );
+
+            // --- VISTA 3: IF / VALIDACIÓN DE CUENTA ACTIVA ---
+            const CheckActiveView = () => (
+                <div className="mobile-shell bg-slate-900 text-white flex flex-col justify-center items-center p-8 text-center animate-in">
+                    <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-6"></div>
+                    <h3 className="text-xl font-black uppercase tracking-widest">Validando red inmobiliaria...</h3>
+                    <p className="text-xs text-slate-400 mt-2">Buscando cuentas activas asociadas a tu DNI / Email.</p>
+                    
+                    <div className="mt-12 space-y-3 w-full max-w-xs">
+                        <button onClick={() => { setHasActiveAccount(true); setView('home_owner'); }} className="w-full py-4 bg-emerald-500 text-slate-900 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg">
+                            Simular: Cuenta Activa (Encontrada)
+                        </button>
+                        <button onClick={() => { setHasActiveAccount(false); setView('val_dni'); }} className="w-full py-4 bg-white/10 text-white font-black text-xs uppercase tracking-widest rounded-xl border border-white/20">
+                            Simular: Cuenta Nueva (Sin Activar)
+                        </button>
+                    </div>
+                </div>
+            );
+
+            // --- VISTA 4: VALIDACIÓN BIOMÉTRICA (DNI + FACE) ---
+            const DniValidationView = () => (
+                <div className="mobile-shell bg-white flex flex-col p-8 justify-center items-center text-center animate-in">
+                    <div className="w-20 h-20 bg-blue-50 text-[#0055DD] rounded-3xl flex items-center justify-center mb-6 shadow-inner">
+                        <Icon name="scan-face" size={36} />
+                    </div>
+                    <h2 className="text-2xl font-black text-[#0D1B4B] uppercase tracking-tighter mb-2">Validación Biométrica</h2>
+                    <p className="text-slate-400 text-xs mb-8">Escanearemos tu DNI y realizaremos una prueba de vida.</p>
+                    
+                    <div className="w-full aspect-[3/2] bg-slate-900 rounded-3xl border-4 border-blue-100 flex items-center justify-center text-white/30 mb-8 relative overflow-hidden shadow-xl">
+                        <div className="w-full h-1 bg-[#00D1FF] absolute top-1/2 shadow-[0_0_15px_#00D1FF] animate-pulse"></div>
+                        <Icon name="camera" size={48} />
+                    </div>
+
+                    <button 
+                        onClick={() => {
+                            setIsScanning(true);
+                            setTimeout(() => {
+                                setIsScanning(false);
+                                setView('chat_propiedad');
+                            }, 1500);
+                        }} 
+                        className="w-full bg-[#0055DD] text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all"
+                    >
+                        Escanear DNI y Rostro
+                    </button>
+                </div>
+            );
+
+            // --- VISTA 5: CHAT IA - ALTA DE PROPIEDAD ---
+            const ChatPropiedadView = () => (
+                <div className="mobile-shell bg-slate-50 flex flex-col animate-in">
+                    <header className="p-4 bg-white border-b flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-50 text-[#0055DD] rounded-xl flex items-center justify-center">
+                            <Icon name="sparkles" size={20} />
+                        </div>
+                        <div>
+                            <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">Asistente DptoLibre</h3>
+                            <p className="text-[9px] text-emerald-500 font-bold uppercase">Carga Inteligente de Activo</p>
+                        </div>
+                    </header>
+
+                    <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar pb-32">
+                        {/* 0. Saludo y Dirección */}
+                        <div className="bot-bubble animate-bubble">
+                            <p>¡Hola! Vamos a dar de alta una nueva propiedad en tu cartera.</p>
+                            <p className="mt-1 text-[#0055DD] font-bold italic">¿Cuál es la dirección exacta del inmueble?</p>
+                        </div>
+
+                        {chatStep >= 1 && <div className="user-bubble animate-bubble">{propData.address}</div>}
+                        {chatStep === 1 && !isTyping && (
+                            <div className="bot-bubble animate-bubble space-y-3">
+                                <p>¡Excelente! Encontré la ubicación por Google Maps:</p>
+                                <div className="bg-white p-3 rounded-2xl border shadow-sm">
+                                    <div className="aspect-video bg-slate-200 rounded-xl mb-2 overflow-hidden relative">
+                                        <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=300&q=80" className="w-full h-full object-cover" />
+                                        <div className="absolute top-2 left-2 bg-black/60 text-white text-[8px] px-2 py-0.5 rounded font-bold uppercase">Geolocalizado</div>
+                                    </div>
+                                    <p className="font-black text-slate-800 text-xs">{propData.address}</p>
+                                </div>
+                                <p className="font-bold text-slate-700">¿Querés agregar características extra? (ej: cochera, pileta).</p>
+                            </div>
+                        )}
+
+                        {chatStep >= 2 && <div className="user-bubble animate-bubble">{propData.features}</div>}
+                        {chatStep === 2 && !isTyping && (
+                            <div className="bot-bubble animate-bubble space-y-3">
+                                <p>Propiedad asociada a tu perfil de dueño con éxito.</p>
+                                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
+                                    <p className="text-xs font-black text-emerald-800 uppercase">Activo Guardado</p>
+                                    <p className="text-[10px] text-emerald-700 mt-0.5">{propData.address}</p>
+                                </div>
+                                <p className="font-bold text-slate-700 mt-2">¿Querés permitirle a un administrador manejarla?</p>
+                                <div className="flex gap-2 mt-2">
+                                    <button onClick={() => advanceChat(3)} className="flex-1 py-3 bg-[#0055DD] text-white rounded-xl font-bold text-xs uppercase shadow-md">Sí, asociar admin</button>
+                                    <button onClick={() => setView('home_owner')} className="flex-1 py-3 bg-white border text-slate-600 rounded-xl font-bold text-xs uppercase">No por ahora</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 3. Pregunta de Administrador (Mail o Celular) */}
+                        {chatStep >= 3 && <div className="user-bubble animate-bubble">Sí, asociar admin</div>}
+                        {chatStep === 3 && !isTyping && (
+                            <div className="bot-bubble animate-bubble space-y-2">
+                                <p>Ingresá el <strong>correo electrónico o celular (WhatsApp)</strong> del administrador para buscarlo en la red.</p>
+                            </div>
+                        )}
+
+                        {chatStep >= 4 && <div className="user-bubble animate-bubble">{propData.adminQuery}</div>}
+
+                        {/* 4. Resultado de Búsqueda Administrador (IF / ELSE) */}
+                        {chatStep === 5 && !isTyping && (
+                            <div className="bot-bubble animate-bubble space-y-4">
+                                {propData.adminFound ? (
+                                    <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl space-y-2">
+                                        <div className="flex items-center gap-2 text-indigo-700 font-black text-xs uppercase">
+                                            <Icon name="check-circle" size={16} /> ¡Administrador Encontrado!
+                                        </div>
+                                        <p className="font-bold text-slate-800 text-sm">{propData.adminFound.name}</p>
+                                        <p className="text-[10px] text-slate-500">{propData.adminFound.email} • {propData.adminFound.phone}</p>
+                                        <button onClick={() => setView('home_owner')} className="w-full mt-2 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md">
+                                            Confirmar y Enviar Solicitud
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-2">
+                                        <div className="flex items-center gap-2 text-amber-700 font-black text-xs uppercase">
+                                            <Icon name="user-plus" size={16} /> No está en DptoLibre
+                                        </div>
+                                        <p className="text-xs text-amber-800 leading-relaxed">
+                                            El gestor ingresado no posee cuenta activa. Le enviaremos una invitación formal por WhatsApp/Mail para que se sume y administre tu unidad.
+                                        </p>
+                                        <button onClick={() => setView('home_owner')} className="w-full mt-2 py-3 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md">
+                                            Enviar Invitación y Finalizar
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {isTyping && (
+                            <div className="bot-bubble flex items-center gap-1.5 py-3 w-max">
+                                <div className="typing-dot"></div><div className="typing-dot"></div><div className="typing-dot"></div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Input Chat */}
+                    {(chatStep === 0 || chatStep === 1 || chatStep === 4) && !isTyping && (
+                        <footer className="p-4 bg-white border-t sticky bottom-0 z-20">
+                            <div className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    value={chatInput}
+                                    onChange={(e) => setChatInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
+                                    placeholder={chatStep === 0 ? "Escribe la dirección..." : chatStep === 1 ? "Ej: Cochera, pileta..." : "Email o celular del admin..."}
+                                    className="flex-1 bg-slate-50 border px-4 py-3 rounded-xl text-sm font-bold outline-none focus:border-[#0055DD]"
+                                    autoFocus
+                                />
+                                <button onClick={handleChatSend} className="bg-[#0055DD] text-white w-12 h-12 rounded-xl flex items-center justify-center shadow-md active:scale-95 transition-transform shrink-0">
+                                    <Icon name="send" size={18} />
+                                </button>
+                            </div>
+                        </footer>
+                    )}
+                </div>
+            );
+
+            // --- VISTA 6: HOME DEL PROPIETARIO ---
+            const HomeOwnerView = () => (
+                <div className="mobile-shell bg-[#F0F2F6] flex flex-col animate-in overflow-y-auto no-scrollbar pb-24">
+                    <header className="p-6 bg-slate-900 text-white flex justify-between items-center rounded-b-[2.5rem] shadow-xl">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full border-2 border-emerald-400 overflow-hidden bg-slate-800">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Roberto" alt="Owner" />
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-black leading-none">Roberto Gomez</h3>
+                                <p className="text-[9px] font-bold text-emerald-400 uppercase mt-1">Propietario Verificado</p>
+                            </div>
+                        </div>
+                        <Icon name="bell" size={20} className="text-slate-400" />
+                    </header>
+
+                    <main className="p-6 space-y-6">
+                        {/* Saldo Líquido */}
+                        <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Saldo Líquido a Cobrar</p>
+                            <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">$760.400</h2>
+                            <button className="w-full bg-emerald-500 text-slate-900 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all">
+                                Retirar a mi Cuenta
+                            </button>
+                        </div>
+
+                        {/* Propiedades del Dueño */}
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center px-1">
+                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mis Propiedades Asociadas</h4>
+                                <button onClick={() => setView('chat_propiedad')} className="text-[#0055DD] text-[10px] font-black uppercase flex items-center gap-1">
+                                    <Icon name="plus" size={14}/> Agregar Activo
+                                </button>
+                            </div>
+                            
+                            <div className="bg-white p-5 rounded-3xl border shadow-sm flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center font-bold">
+                                        <Icon name="shield-check" size={22} />
+                                    </div>
+                                    <div>
+                                        <h5 className="font-black text-slate-800 text-sm">Caseros 1230, 4B</h5>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase">Alquilado • Admin: Raíces</p>
+                                    </div>
+                                </div>
+                                <span className="text-xs font-black text-emerald-600">$450.000</span>
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* Nav inferior */}
+                    <nav className="absolute bottom-0 w-full bg-white border-t p-4 flex justify-around items-center">
+                        <div className="text-[#0055DD] flex flex-col items-center gap-1"><Icon name="home"/><span className="text-[8px] font-black uppercase">Inicio</span></div>
+                        <div className="text-slate-300 flex flex-col items-center gap-1"><Icon name="file-text"/><span className="text-[8px] font-black uppercase">Contratos</span></div>
+                        <div className="text-slate-300 flex flex-col items-center gap-1"><Icon name="wallet"/><span className="text-[8px] font-black uppercase">Dinero</span></div>
+                    </nav>
+                </div>
+            );
+
+            return (
+                <div className="h-screen w-full flex flex-col items-center justify-center p-4">
+                    <div className="mobile-shell">
+                        {/* Notch */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-[#0D1B4B] rounded-b-3xl z-[150] flex items-center justify-center gap-2 shadow-sm">
+                            <div className="w-1.5 h-1.5 rounded-full bg-white/20"></div>
+                            <div className="w-10 h-1 bg-white/20 rounded-full"></div>
+                        </div>
+
+                        {view === 'login' && <LoginView />}
+                        {view === 'role_selection' && <RoleSelectionView />}
+                        {view === 'check_active' && <CheckActiveView />}
+                        {view === 'val_dni' && <DniValidationView />}
+                        {view === 'chat_propiedad' && <ChatPropiedadView />}
+                        {view === 'home_owner' && <HomeOwnerView />}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<OwnerApp />);
+    </script>
+</body>
+</html>
