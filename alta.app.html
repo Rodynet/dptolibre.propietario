@@ -90,7 +90,6 @@
         );
 
         function OwnerApp() {
-            // VISTAS: login, role_selection, check_active, val_biometric, reconf_propiedades, count_properties, chat_propiedad, home_owner
             const [view, setView] = useState('login');
             const [emailInput, setEmailInput] = useState('');
             const [hasActiveAccount, setHasActiveAccount] = useState(false);
@@ -99,6 +98,7 @@
             const [propCount, setPropCount] = useState(1);
             const [currentPropIndex, setCurrentPropIndex] = useState(0);
             const [adminScope, setAdminScope] = useState('same'); // 'same' o 'different'
+            const [sharedAdmin, setSharedAdmin] = useState(null); // Administrador único si eligió 'same'
             
             // Chat IA y datos recolectados
             const [chatStep, setChatStep] = useState(0);
@@ -127,7 +127,7 @@
 
             const handleChatSend = (customVal) => {
                 const val = customVal !== undefined ? customVal : chatInput.trim();
-                if (!val && chatStep !== 2) return; // chatStep 2 maneja botones si no escribe
+                if (!val && chatStep !== 2) return;
                 if (customVal === undefined) setChatInput("");
 
                 if (chatStep === 0) {
@@ -137,12 +137,16 @@
                     setCurrentProp(p => ({ ...p, features: val }));
                     advanceChat(2); // Pregunta sobre administrador conversacional
                 } else if (chatStep === 3) {
+                    // Búsqueda de administrador en red
                     setCurrentProp(p => ({ ...p, adminContact: val }));
                     setIsTyping(true);
                     setTimeout(() => {
                         setIsTyping(false);
                         const found = registeredAdmins.find(a => a.email.toLowerCase() === val.toLowerCase() || a.phone.includes(val));
                         setCurrentProp(p => ({ ...p, adminFound: found || null }));
+                        if (adminScope === 'same' && currentPropIndex === 0) {
+                            setSharedAdmin(found || { name: val, custom: true });
+                        }
                         setChatStep(4); // Resultado de búsqueda de admin
                     }, 1200);
                 }
@@ -153,17 +157,21 @@
                 setPropertiesList(updatedList);
                 
                 if (currentPropIndex + 1 < propCount) {
-                    // Siguiente propiedad con resumen previo
                     setCurrentPropIndex(currentPropIndex + 1);
-                    setCurrentProp({ address: '', features: '', adminContact: '', adminFound: null });
-                    setChatStep(0);
+                    if (adminScope === 'same' && sharedAdmin) {
+                        // Si es el mismo admin, heredamos el admin para la siguiente propiedad y saltamos al resumen final de unidad
+                        setCurrentProp({ address: '', features: '', adminContact: sharedAdmin.email || sharedAdmin.name, adminFound: sharedAdmin });
+                        setChatStep(0);
+                    } else {
+                        setCurrentProp({ address: '', features: '', adminContact: '', adminFound: null });
+                        setChatStep(0);
+                    }
                 } else {
-                    // Fin de carga de propiedades
                     setView('home_owner');
                 }
             };
 
-            // --- 1. LOGIN SCREEN (IMAGEN 1) ---
+            // --- 1. LOGIN SCREEN ---
             const LoginView = () => (
                 <div className="mobile-shell bg-white flex flex-col p-8 justify-center animate-in text-center">
                     <Logo />
@@ -199,7 +207,7 @@
                 </div>
             );
 
-            // --- 2. SELECCIÓN DE ROL (EXCLUSIVO PROPIETARIO) ---
+            // --- 2. SELECCIÓN DE ROL ---
             const RoleSelectionView = () => (
                 <div className="mobile-shell bg-white flex flex-col p-8 animate-in justify-center">
                     <h2 className="text-2xl font-black text-[#0D1B4B] tracking-tight mb-2 text-center uppercase">¿Cuál es tu rol?</h2>
@@ -231,7 +239,7 @@
                 </div>
             );
 
-            // --- 3. VALIDACIÓN DE CUENTA ACTIVA (IF / ELSE) ---
+            // --- 3. VALIDACIÓN DE CUENTA ACTIVA ---
             const CheckActiveView = () => (
                 <div className="mobile-shell bg-slate-900 text-white flex flex-col justify-center items-center p-8 text-center animate-in">
                     <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-6"></div>
@@ -249,7 +257,7 @@
                 </div>
             );
 
-            // --- 4. VALIDACIÓN BIOMÉTRICA (DNI + ROSTRO) ---
+            // --- 4. VALIDACIÓN BIOMÉTRICA ---
             const BiometricValidationView = () => (
                 <div className="mobile-shell bg-white flex flex-col p-8 justify-center items-center text-center animate-in">
                     <div className="w-20 h-20 bg-blue-50 text-[#0055DD] rounded-3xl flex items-center justify-center mb-6 shadow-inner">
@@ -345,6 +353,7 @@
                         onClick={() => {
                             setCurrentPropIndex(0);
                             setPropertiesList([]);
+                            setSharedAdmin(null);
                             setCurrentProp({ address: '', features: '', adminContact: '', adminFound: null });
                             setView('chat_propiedad');
                         }} 
@@ -355,7 +364,7 @@
                 </div>
             );
 
-            // --- 6. CHAT IA - CARGA DE PROPIEDAD Y ADMINISTRADOR CONVERSACIONAL ---
+            // --- 6. CHAT IA - CARGA DE PROPIEDAD Y ADMINISTRADOR CON PREGUNTA CONCRETA Y BÚSQUEDA REAL EN RED ---
             const ChatPropiedadView = () => (
                 <div className="mobile-shell bg-slate-50 flex flex-col animate-in">
                     <header className="p-4 bg-white border-b flex items-center justify-between">
@@ -374,8 +383,9 @@
                     <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar pb-32">
                         {/* Resumen si venimos de cargar una propiedad previa */}
                         {currentPropIndex > 0 && chatStep === 0 && (
-                            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl text-[11px] text-emerald-800">
-                                ✓ <b>Propiedad anterior guardada:</b> {propertiesList[propertiesList.length - 1].address}
+                            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl text-[11px] text-emerald-800 animate-bubble">
+                                ✓ <b>Propiedad anterior guardada:</b> {propertiesList[propertiesList.length - 1].address} <br/>
+                                <span className="text-[9px] text-emerald-600">Admin asignado: {propertiesList[propertiesList.length - 1].adminFound?.name || propertiesList[propertiesList.length - 1].adminContact}</span>
                             </div>
                         )}
 
@@ -402,21 +412,17 @@
 
                         {chatStep >= 2 && <div className="user-bubble animate-bubble">{currentProp.features}</div>}
                         
-                        {/* PREGUNTA ADMINISTRADOR CONVERSACIONAL (CORREGIDO Y CLARO) */}
+                        {/* PREGUNTA ADMINISTRADOR CONCRETA CON ESTILO CHAT */}
                         {chatStep === 2 && !isTyping && (
-                            <div className="bot-bubble animate-bubble space-y-3">
+                            <div className="bot-bubble animate-bubble space-y-2">
                                 <p>Propiedad asociada con éxito a tu perfil de dueño.</p>
-                                <p className="font-bold text-[#0055DD]">¿Querés permitirle a un administrador manejar esta unidad?</p>
-                                <div className="flex gap-2 mt-2">
-                                    <button onClick={() => advanceChat(3)} className="flex-1 py-3 bg-[#0055DD] text-white rounded-xl font-bold text-xs uppercase shadow-md">Sí, asociar admin</button>
-                                    <button onClick={saveCurrentPropertyAndContinue} className="flex-1 py-3 bg-white border text-slate-600 rounded-xl font-bold text-xs uppercase">No por ahora</button>
-                                </div>
+                                <p className="font-bold text-[#0055DD] italic">¿Querés permitirle a un administrador manejar esta unidad? Ingresá su correo electrónico o celular (WhatsApp).</p>
                             </div>
                         )}
 
                         {chatStep >= 3 && <div className="user-bubble animate-bubble">{currentProp.adminContact}</div>}
 
-                        {/* RESULTADO BÚSQUEDA DE ADMINISTRADOR */}
+                        {/* RESULTADO BÚSQUEDA DE ADMINISTRADOR (SIMULA BÚSQUEDA REAL) */}
                         {chatStep === 4 && !isTyping && (
                             <div className="bot-bubble animate-bubble space-y-4">
                                 {currentProp.adminFound ? (
@@ -427,7 +433,7 @@
                                         <p className="font-bold text-slate-800 text-sm">{currentProp.adminFound.name}</p>
                                         <p className="text-[10px] text-slate-500">{currentProp.adminFound.email} • {currentProp.adminFound.phone}</p>
                                         <button onClick={saveCurrentPropertyAndContinue} className="w-full mt-2 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md">
-                                            Confirmar Administrador
+                                            Confirmar Administrador y Continuar
                                         </button>
                                     </div>
                                 ) : (
@@ -436,7 +442,7 @@
                                             <Icon name="user-plus" size={16} /> No está en DptoLibre
                                         </div>
                                         <p className="text-xs text-amber-800 leading-relaxed">
-                                            El gestor ingresado no posee cuenta activa. Le enviaremos una invitación formal para que administre tu unidad.
+                                            El gestor ingresado no posee cuenta activa en la red. Le enviaremos una invitación formal para que administre tu unidad.
                                         </p>
                                         <button onClick={saveCurrentPropertyAndContinue} className="w-full mt-2 py-3 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md">
                                             Enviar Invitación y Continuar
@@ -453,7 +459,7 @@
                         )}
                     </div>
 
-                    {/* Input Chat Conversacional */}
+                    {/* Input Chat Conversacional Activo en Pasos 0, 1 y 3 */}
                     {(chatStep === 0 || chatStep === 1 || chatStep === 3) && !isTyping && (
                         <footer className="p-4 bg-white border-t sticky bottom-0 z-20">
                             <div className="flex gap-2">
@@ -462,7 +468,11 @@
                                     value={chatInput}
                                     onChange={(e) => setChatInput(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
-                                    placeholder={chatStep === 0 ? "Escribe la dirección..." : chatStep === 1 ? "Ej: Cochera, pileta..." : "Email o celular (WhatsApp) del administrador..."}
+                                    placeholder={
+                                        chatStep === 0 ? "Escribe la dirección exacta..." : 
+                                        chatStep === 1 ? "Ej: Cochera, 2 dormitorios..." : 
+                                        "Email o celular (WhatsApp) del administrador..."
+                                    }
                                     className="flex-1 bg-slate-50 border px-4 py-3 rounded-xl text-sm font-bold outline-none focus:border-[#0055DD]"
                                     autoFocus
                                 />
@@ -522,7 +532,7 @@
                                             </div>
                                             <div>
                                                 <h5 className="font-black text-slate-800 text-xs">{prop.address}</h5>
-                                                <p className="text-[9px] text-slate-400 font-bold uppercase">{prop.adminContact ? `Admin: ${prop.adminContact}` : 'Sin admin asignado'}</p>
+                                                <p className="text-[9px] text-slate-400 font-bold uppercase">{prop.adminFound ? `Admin: ${prop.adminFound.name}` : prop.adminContact ? `Admin: ${prop.adminContact}` : 'Sin admin asignado'}</p>
                                             </div>
                                         </div>
                                         <span className="text-xs font-black text-emerald-600">$450.000</span>
