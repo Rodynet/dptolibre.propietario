@@ -90,7 +90,7 @@
         );
 
         function OwnerApp() {
-            // VISTAS: login, role_selection, check_active, val_biometric, reconf_propiedades, chat_propiedad, home_owner
+            // VISTAS: login, role_selection, check_active, val_biometric, reconf_propiedades, count_properties, chat_propiedad, home_owner
             const [view, setView] = useState('login');
             const [emailInput, setEmailInput] = useState('');
             const [hasActiveAccount, setHasActiveAccount] = useState(false);
@@ -125,17 +125,17 @@
                 }, delay);
             };
 
-            const handleChatSend = () => {
-                if (!chatInput.trim()) return;
-                const val = chatInput.trim();
-                setChatInput("");
+            const handleChatSend = (customVal) => {
+                const val = customVal !== undefined ? customVal : chatInput.trim();
+                if (!val && chatStep !== 2) return; // chatStep 2 maneja botones si no escribe
+                if (customVal === undefined) setChatInput("");
 
                 if (chatStep === 0) {
                     setCurrentProp(p => ({ ...p, address: val }));
                     advanceChat(1);
                 } else if (chatStep === 1) {
                     setCurrentProp(p => ({ ...p, features: val }));
-                    advanceChat(2); // Pregunta sobre administrador
+                    advanceChat(2); // Pregunta sobre administrador conversacional
                 } else if (chatStep === 3) {
                     setCurrentProp(p => ({ ...p, adminContact: val }));
                     setIsTyping(true);
@@ -153,7 +153,7 @@
                 setPropertiesList(updatedList);
                 
                 if (currentPropIndex + 1 < propCount) {
-                    // Siguiente propiedad
+                    // Siguiente propiedad con resumen previo
                     setCurrentPropIndex(currentPropIndex + 1);
                     setCurrentProp({ address: '', features: '', adminContact: '', adminFound: null });
                     setChatStep(0);
@@ -199,7 +199,7 @@
                 </div>
             );
 
-            // --- 2. SELECCIÓN DE ROL ---
+            // --- 2. SELECCIÓN DE ROL (EXCLUSIVO PROPIETARIO) ---
             const RoleSelectionView = () => (
                 <div className="mobile-shell bg-white flex flex-col p-8 animate-in justify-center">
                     <h2 className="text-2xl font-black text-[#0D1B4B] tracking-tight mb-2 text-center uppercase">¿Cuál es tu rol?</h2>
@@ -213,7 +213,7 @@
                                 key={r.id} 
                                 onClick={() => {
                                     if (r.id === 'propietario') setView('check_active');
-                                    else alert("Por favor seleccioná Propietario.");
+                                    else alert("Por favor seleccioná Propietario para continuar con este flujo.");
                                 }} 
                                 className="w-full p-6 border-2 border-slate-100 rounded-3xl text-left flex items-center gap-4 hover:border-[#0055DD] hover:bg-blue-50/30 transition-all group"
                             >
@@ -293,9 +293,12 @@
                                     <span className="text-[9px] font-black bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded uppercase">Pre-asociada</span>
                                     <h4 className="font-black text-slate-800 text-sm mt-1">{p.address}</h4>
                                 </div>
-                                <div className="pt-2 border-t border-slate-50">
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase">Administrador Actual:</p>
-                                    <p className="text-xs font-black text-[#0055DD]">{p.admin}</p>
+                                <div className="pt-2 border-t border-slate-50 flex justify-between items-center">
+                                    <div>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase">Administrador Actual:</p>
+                                        <p className="text-xs font-black text-[#0055DD]">{p.admin}</p>
+                                    </div>
+                                    <button onClick={() => alert("Administrador reconfirmado con éxito.")} className="text-[9px] font-black bg-blue-50 text-[#0055DD] px-3 py-1.5 rounded-lg uppercase">Cambiar Admin</button>
                                 </div>
                             </div>
                         ))}
@@ -314,7 +317,7 @@
                         <Icon name="home" size={32} />
                     </div>
                     <h2 className="text-2xl font-black text-[#0D1B4B] uppercase tracking-tighter mb-2">Tus Inmuebles</h2>
-                    <p className="text-slate-400 text-xs mb-8">¿Cuántas propiedades querés registrar en tu cartera?</p>
+                    <p className="text-slate-400 text-xs mb-8">Bienvenido. ¿Cuántas propiedades deseas que administren en tu cartera?</p>
                     
                     <div className="flex gap-3 justify-center mb-8">
                         {[1, 2, 3, 4].map(num => (
@@ -328,13 +331,15 @@
                         ))}
                     </div>
 
-                    <div className="mb-8 p-4 bg-slate-50 rounded-2xl border text-left">
-                        <p className="text-xs font-bold text-slate-700 mb-2 uppercase">¿Van a ser gestionadas por un mismo administrador?</p>
-                        <div className="flex gap-2">
-                            <button onClick={() => setAdminScope('same')} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase border ${adminScope === 'same' ? 'bg-[#0055DD] text-white' : 'bg-white text-slate-600'}`}>Sí, mismo admin</button>
-                            <button onClick={() => setAdminScope('different')} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase border ${adminScope === 'different' ? 'bg-[#0055DD] text-white' : 'bg-white text-slate-600'}`}>No, distinto admin</button>
+                    {propCount > 1 && (
+                        <div className="mb-8 p-4 bg-slate-50 rounded-2xl border text-left animate-in">
+                            <p className="text-xs font-bold text-slate-700 mb-2 uppercase">¿Van a ser gestionadas por un mismo administrador?</p>
+                            <div className="flex gap-2">
+                                <button onClick={() => setAdminScope('same')} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase border ${adminScope === 'same' ? 'bg-[#0055DD] text-white' : 'bg-white text-slate-600'}`}>Sí, mismo admin</button>
+                                <button onClick={() => setAdminScope('different')} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase border ${adminScope === 'different' ? 'bg-[#0055DD] text-white' : 'bg-white text-slate-600'}`}>No, distinto admin</button>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <button 
                         onClick={() => {
@@ -350,7 +355,7 @@
                 </div>
             );
 
-            // --- 6. CHAT IA - CARGA DE PROPIEDAD (IMAGEN 2 y 3) ---
+            // --- 6. CHAT IA - CARGA DE PROPIEDAD Y ADMINISTRADOR CONVERSACIONAL ---
             const ChatPropiedadView = () => (
                 <div className="mobile-shell bg-slate-50 flex flex-col animate-in">
                     <header className="p-4 bg-white border-b flex items-center justify-between">
@@ -367,9 +372,16 @@
                     </header>
 
                     <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar pb-32">
+                        {/* Resumen si venimos de cargar una propiedad previa */}
+                        {currentPropIndex > 0 && chatStep === 0 && (
+                            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl text-[11px] text-emerald-800">
+                                ✓ <b>Propiedad anterior guardada:</b> {propertiesList[propertiesList.length - 1].address}
+                            </div>
+                        )}
+
                         {/* 0. Dirección */}
                         <div className="bot-bubble animate-bubble">
-                            <p>¡Hola! Vamos a dar de alta una nueva propiedad en tu cartera.</p>
+                            <p>¡Hola! Vamos a dar de alta la propiedad {currentPropIndex + 1} en tu cartera.</p>
                             <p className="mt-1 text-[#0055DD] font-bold italic">¿Cuál es la dirección exacta del inmueble?</p>
                         </div>
 
@@ -389,10 +401,12 @@
                         )}
 
                         {chatStep >= 2 && <div className="user-bubble animate-bubble">{currentProp.features}</div>}
+                        
+                        {/* PREGUNTA ADMINISTRADOR CONVERSACIONAL (CORREGIDO Y CLARO) */}
                         {chatStep === 2 && !isTyping && (
                             <div className="bot-bubble animate-bubble space-y-3">
-                                <p>Propiedad asociada a tu perfil de dueño con éxito.</p>
-                                <p className="font-bold text-slate-700">¿Querés permitirle a un administrador manejar esta unidad?</p>
+                                <p>Propiedad asociada con éxito a tu perfil de dueño.</p>
+                                <p className="font-bold text-[#0055DD]">¿Querés permitirle a un administrador manejar esta unidad?</p>
                                 <div className="flex gap-2 mt-2">
                                     <button onClick={() => advanceChat(3)} className="flex-1 py-3 bg-[#0055DD] text-white rounded-xl font-bold text-xs uppercase shadow-md">Sí, asociar admin</button>
                                     <button onClick={saveCurrentPropertyAndContinue} className="flex-1 py-3 bg-white border text-slate-600 rounded-xl font-bold text-xs uppercase">No por ahora</button>
@@ -402,7 +416,7 @@
 
                         {chatStep >= 3 && <div className="user-bubble animate-bubble">{currentProp.adminContact}</div>}
 
-                        {/* RESULTADO BÚSQUEDA DE ADMINISTRADOR (IMAGEN 3) */}
+                        {/* RESULTADO BÚSQUEDA DE ADMINISTRADOR */}
                         {chatStep === 4 && !isTyping && (
                             <div className="bot-bubble animate-bubble space-y-4">
                                 {currentProp.adminFound ? (
@@ -439,7 +453,7 @@
                         )}
                     </div>
 
-                    {/* Input Chat */}
+                    {/* Input Chat Conversacional */}
                     {(chatStep === 0 || chatStep === 1 || chatStep === 3) && !isTyping && (
                         <footer className="p-4 bg-white border-t sticky bottom-0 z-20">
                             <div className="flex gap-2">
@@ -448,11 +462,11 @@
                                     value={chatInput}
                                     onChange={(e) => setChatInput(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
-                                    placeholder={chatStep === 0 ? "Escribe la dirección..." : chatStep === 1 ? "Ej: Cochera, pileta..." : "Email o celular del administrador..."}
+                                    placeholder={chatStep === 0 ? "Escribe la dirección..." : chatStep === 1 ? "Ej: Cochera, pileta..." : "Email o celular (WhatsApp) del administrador..."}
                                     className="flex-1 bg-slate-50 border px-4 py-3 rounded-xl text-sm font-bold outline-none focus:border-[#0055DD]"
                                     autoFocus
                                 />
-                                <button onClick={handleChatSend} className="bg-[#0055DD] text-white w-12 h-12 rounded-xl flex items-center justify-center shadow-md active:scale-95 transition-transform shrink-0">
+                                <button onClick={() => handleChatSend()} className="bg-[#0055DD] text-white w-12 h-12 rounded-xl flex items-center justify-center shadow-md active:scale-95 transition-transform shrink-0">
                                     <Icon name="send" size={18} />
                                 </button>
                             </div>
@@ -461,7 +475,7 @@
                 </div>
             );
 
-            // --- 7. HOME DEL PROPIETARIO ---
+            // --- 7. HOME DEL PROPIETARIO CON QR DE COMPARTIR ---
             const HomeOwnerView = () => (
                 <div className="mobile-shell bg-[#F0F2F6] flex flex-col animate-in overflow-y-auto no-scrollbar pb-24">
                     <header className="p-6 bg-slate-900 text-white flex justify-between items-center rounded-b-[2.5rem] shadow-xl">
@@ -487,7 +501,7 @@
                             </button>
                         </div>
 
-                        {/* Propiedades del Dueño (Dinámicas y con QR) */}
+                        {/* Propiedades del Dueño con Código QR */}
                         <div className="space-y-3">
                             <div className="flex justify-between items-center px-1">
                                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mis Propiedades Asociadas ({propertiesList.length || 2})</h4>
@@ -497,8 +511,8 @@
                             </div>
                             
                             {(propertiesList.length > 0 ? propertiesList : [
-                                { address: "Caseros 1230, 4B", features: "Cochera" },
-                                { address: "Av. Hipólito Yrigoyen 850", features: "Pileta" }
+                                { address: "Caseros 1230, 4B", features: "Cochera", adminContact: "Inmobiliaria Raíces" },
+                                { address: "Av. Hipólito Yrigoyen 850", features: "Pileta", adminContact: "Gestiones del Sur" }
                             ]).map((prop, idx) => (
                                 <div key={idx} className="bg-white p-5 rounded-3xl border shadow-sm space-y-3">
                                     <div className="flex items-center justify-between">
@@ -508,7 +522,7 @@
                                             </div>
                                             <div>
                                                 <h5 className="font-black text-slate-800 text-xs">{prop.address}</h5>
-                                                <p className="text-[9px] text-slate-400 font-bold uppercase">Blindado • Activo</p>
+                                                <p className="text-[9px] text-slate-400 font-bold uppercase">{prop.adminContact ? `Admin: ${prop.adminContact}` : 'Sin admin asignado'}</p>
                                             </div>
                                         </div>
                                         <span className="text-xs font-black text-emerald-600">$450.000</span>
@@ -517,7 +531,7 @@
                                         <div className="flex items-center gap-2 text-[10px] text-indigo-600 font-bold">
                                             <Icon name="qr-code" size={16} /> QR de Propiedad Activo
                                         </div>
-                                        <button onClick={() => alert("Código QR copiado al portapapeles para compartir con inquilinos o admin.")} className="text-[9px] font-black bg-slate-100 text-slate-600 px-3 py-1 rounded-lg uppercase">
+                                        <button onClick={() => alert("Código QR copiado al portapapeles para compartir con inquilinos o para cargar la administración en cualquier momento.")} className="text-[9px] font-black bg-slate-100 text-slate-600 px-3 py-1 rounded-lg uppercase">
                                             Compartir QR
                                         </button>
                                     </div>
