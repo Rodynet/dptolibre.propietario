@@ -127,7 +127,7 @@
 
             const handleChatSend = (customVal) => {
                 const val = customVal !== undefined ? customVal : chatInput.trim();
-                if (!val && chatStep !== 2) return;
+                if (!val) return;
                 if (customVal === undefined) setChatInput("");
 
                 if (chatStep === 0) {
@@ -135,7 +135,7 @@
                     advanceChat(1);
                 } else if (chatStep === 1) {
                     setCurrentProp(p => ({ ...p, features: val }));
-                    advanceChat(2); // Muestra mensaje y avanza a paso 3 para permitir ingreso del admin
+                    advanceChat(2); // Muestra mensaje de éxito y avanza al paso de ingreso del administrador (paso 3)
                 } else if (chatStep === 3) {
                     setCurrentProp(p => ({ ...p, adminContact: val }));
                     setIsTyping(true);
@@ -169,11 +169,11 @@
                 }
             };
 
-            // --- 1. LOGIN SCREEN CON VERSIÓN V2.5 ---
+            // --- 1. LOGIN SCREEN CON VERSIÓN V2.7 ---
             const LoginView = () => (
                 <div className="mobile-shell bg-white flex flex-col p-8 justify-center animate-in text-center relative">
                     <div className="absolute top-4 right-4 bg-slate-100 text-slate-500 text-[9px] font-black uppercase px-2 py-1 rounded-md tracking-wider">
-                        DptoLibre OS • Versión Propietario V2.5
+                        DptoLibre OS • Versión Propietario V2.7
                     </div>
                     <Logo />
                     <h1 className="text-xl font-black mt-6 text-[#0D1B4B] uppercase tracking-tighter">BIENVENIDO</h1>
@@ -413,11 +413,11 @@
 
                         {chatStep >= 2 && <div className="user-bubble animate-bubble">{currentProp.features}</div>}
                         
-                        {/* PREGUNTA ADMINISTRADOR CONCRETA */}
+                        {/* PREGUNTA ADMINISTRADOR CONCRETA EN COLOR AZUL COMO LA DIRECCIÓN */}
                         {chatStep >= 2 && !isTyping && (
                             <div className="bot-bubble animate-bubble space-y-2">
                                 <p>Propiedad asociada con éxito a tu perfil de dueño.</p>
-                                <p className="font-bold text-[#0055DD] italic">¿Querés permitirle a un administrador manejar esta unidad? Ingresá su correo electrónico o celular (WhatsApp).</p>
+                                <p className="text-[#0055DD] font-bold italic">¿Querés permitirle a un administrador manejar esta unidad? Ingresá su correo electrónico o celular (WhatsApp).</p>
                             </div>
                         )}
 
