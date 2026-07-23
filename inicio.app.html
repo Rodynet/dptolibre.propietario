@@ -67,27 +67,35 @@
             const [showQRModal, setShowQRModal] = useState(false);
             const [selectedProp, setSelectedProp] = useState(null);
             const [showProfileModal, setShowProfileModal] = useState(false);
+            const [showRedeemModal, setShowRedeemModal] = useState(false);
+            const [selectedTenant, setSelectedTenant] = useState(null);
+            const [showTenantModal, setShowTenantModal] = useState(false);
+            const [showAdminModal, setShowAdminModal] = useState(false);
+            const [selectedAdminProp, setSelectedAdminProp] = useState(null);
 
-            // Mock Data del Propietario (Fricción Cero - Con M² de Fidelización y Tickets de Mantenimiento)
+            // Mock Data del Propietario (Con desglose de ingresos e intereses, M2, Inquilinos detallados y Admin configurable)
             const owner = {
                 name: "Roberto Daer",
                 level: "Propietario Platinum",
-                liquidBalance: 760400,
-                pendingClearing: 150000,
-                yieldGenerated: 4820,
-                m2Fidelizacion: 142, // Metros cuadrados virtuales por fidelización de alquileres
+                rentIncome: 760400,
+                interestYield: 24350,
+                m2Fidelizacion: 142,
                 properties: [
                     { 
                         id: 1, 
                         address: "Caseros 1230, 4B", 
                         tenant: "Juan Pérez", 
                         tenantScore: 850,
+                        tenantPhone: "+54 351 2233445",
+                        tenantEmail: "juan.perez@email.com",
                         tenantHistory: "14 meses en término, cero mora",
-                        status: "Blindado", 
+                        status: "Blindado (100% Seguro)", 
                         rentAmount: 400000,
                         lastPayment: "05/04/2026",
                         contractEnd: "05/04/2027",
                         admin: "Inmobiliaria Raíces",
+                        adminPhone: "+54 351 4000000",
+                        adminEmail: "admin@raices.com",
                         features: "2 Dormitorios, Cochera, 75 m²",
                         tickets: [
                             { id: 882, title: "Reparación de grifería baño", status: "En Proceso (Autorizado)", date: "15/04/2026" }
@@ -98,12 +106,16 @@
                         address: "Av. Hipólito Yrigoyen 850", 
                         tenant: "María García", 
                         tenantScore: 810,
+                        tenantPhone: "+54 351 9988776",
+                        tenantEmail: "maria.garcia@email.com",
                         tenantHistory: "8 meses en término",
-                        status: "Blindado", 
+                        status: "Blindado (100% Seguro)", 
                         rentAmount: 360400,
                         lastPayment: "02/04/2026",
                         contractEnd: "01/09/2026",
                         admin: "Gestiones del Sur",
+                        adminPhone: "+54 351 5000000",
+                        adminEmail: "contacto@sur.com",
                         features: "1 Dormitorio, Balcón, 45 m²",
                         tickets: []
                     }
@@ -125,8 +137,11 @@
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
-                            <div className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-xl text-center">
-                                <p className="text-[9px] font-black uppercase">M² Acumulados</p>
+                            <div 
+                                onClick={() => setShowRedeemModal(true)}
+                                className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-xl text-center cursor-pointer hover:bg-amber-500/30 transition-colors"
+                            >
+                                <p className="text-[9px] font-black uppercase">M² Club</p>
                                 <p className="text-xs font-black">{owner.m2Fidelizacion} M²</p>
                             </div>
                             <button className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-slate-700 transition-colors relative">
@@ -141,18 +156,24 @@
             const HomeView = () => (
                 <div className="p-4 space-y-4 pb-28 overflow-y-auto no-scrollbar flex-1 animate-in">
                     
-                    {/* TARJETA 1: Saldo Líquido y Retiro Inmediato */}
+                    {/* TARJETA 1: Saldo Líquido Desglosado (Alquileres vs Intereses) */}
                     <div className="bg-slate-900 rounded-[2.5rem] p-6 text-white shadow-xl relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-full bg-emerald-500/10 pattern-dots opacity-30"></div>
                         <div className="relative z-10">
-                            <div className="flex justify-between items-center mb-1">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Saldo Líquido Disponible</span>
-                                <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                    <i className="fa-solid fa-arrow-trend-up"></i> +${owner.yieldGenerated} hoy
-                                </span>
-                            </div>
-                            <div className="text-4xl font-black tracking-tighter mb-5">${owner.liquidBalance.toLocaleString('es-AR')}</div>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tesorería Total Disponible</span>
+                            <div className="text-4xl font-black tracking-tighter mb-4">${(owner.rentIncome + owner.interestYield).toLocaleString('es-AR')}</div>
                             
+                            <div className="grid grid-cols-2 gap-2 bg-slate-800/80 p-3.5 rounded-2xl mb-5 border border-slate-700/50">
+                                <div>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Ingreso Alquileres</p>
+                                    <p className="text-xs font-black text-emerald-400 mt-0.5">${owner.rentIncome.toLocaleString('es-AR')}</p>
+                                </div>
+                                <div className="border-l border-slate-700 pl-3">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Intereses (FCI T+0)</p>
+                                    <p className="text-xs font-black text-amber-400 mt-0.5">+${owner.interestYield.toLocaleString('es-AR')}</p>
+                                </div>
+                            </div>
+
                             <button 
                                 onClick={() => setShowWithdrawModal(true)}
                                 className="w-full bg-emerald-500 text-slate-900 font-black py-4 rounded-2xl hover:bg-emerald-400 flex justify-center items-center gap-2 transition-transform active:scale-95 shadow-lg shadow-emerald-500/20 text-xs uppercase tracking-widest"
@@ -163,7 +184,7 @@
                         </div>
                     </div>
 
-                    {/* TARJETA 2: Estado de Activos con Detalle de Inquilino y Tickets */}
+                    {/* TARJETA 2: Estado de Activos con Seguridad, Inquilino y Administrador Configurable */}
                     <div className="space-y-3">
                         <div className="flex justify-between items-center px-1">
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mis Unidades Protegidas ({owner.properties.length})</h3>
@@ -178,27 +199,45 @@
                                         </div>
                                         <div>
                                             <h4 className="font-black text-slate-800 text-sm">{p.address}</h4>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{p.features} • Admin: {p.admin}</p>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{p.features}</p>
                                         </div>
                                     </div>
-                                    <span className="text-[9px] font-black bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full uppercase tracking-wider">Blindado</span>
+                                    <span className="text-[9px] font-black bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full uppercase tracking-wider">Blindado (100% Seguro)</span>
                                 </div>
 
-                                <div className="bg-slate-50 p-3.5 rounded-2xl space-y-2">
+                                <div className="bg-slate-50 p-3.5 rounded-2xl space-y-2.5">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-[9px] font-black text-slate-400 uppercase">Inquilino / Score</p>
-                                            <p className="text-xs font-black text-slate-700 mt-0.5">{p.tenant} <span className="text-emerald-600 font-bold ml-1">({p.tenantScore} pts)</span></p>
+                                            <p className="text-[9px] font-black text-slate-400 uppercase">Inquilino (Click para ver)</p>
+                                            <p 
+                                                onClick={() => { setSelectedTenant(p); setShowTenantModal(true); }}
+                                                className="text-xs font-black text-[#0055DD] mt-0.5 cursor-pointer hover:underline flex items-center gap-1"
+                                            >
+                                                {p.tenant} <i className="fa-solid fa-circle-info text-[10px]"></i>
+                                            </p>
                                         </div>
                                         <div className="text-right">
                                             <p className="text-[9px] font-black text-slate-400 uppercase">Renta Mensual</p>
                                             <p className="text-sm font-black text-emerald-600 mt-0.5">${p.rentAmount.toLocaleString('es-AR')}</p>
                                         </div>
                                     </div>
-                                    <p className="text-[10px] text-slate-500 font-medium italic border-t border-slate-200 pt-1.5">Historial: {p.tenantHistory}</p>
+
+                                    {/* Administrador con botón de cambiar */}
+                                    <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-xs">
+                                        <div>
+                                            <span className="text-[9px] font-black text-slate-400 uppercase block">Administrador a cargo</span>
+                                            <span className="font-bold text-slate-700">{p.admin}</span>
+                                        </div>
+                                        <button 
+                                            onClick={() => { setSelectedAdminProp(p); setShowAdminModal(true); }}
+                                            className="text-[10px] font-black text-[#0055DD] bg-blue-50 px-3 py-1.5 rounded-xl hover:bg-blue-100 transition-colors uppercase tracking-wider"
+                                        >
+                                            Cambiar Administrador
+                                        </button>
+                                    </div>
                                 </div>
 
-                                {/* Tickets / Mantenimiento en curso (Solo Lectura para el Dueño) */}
+                                {/* Tickets / Mantenimiento en curso (Solo Lectura) */}
                                 {p.tickets.length > 0 && (
                                     <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-center justify-between text-xs">
                                         <div className="flex items-center gap-2 text-amber-800">
@@ -216,21 +255,24 @@
                                     >
                                         <i className="fa-solid fa-qrcode"></i> Ver QR de Propiedad
                                     </button>
-                                    <span className="text-[10px] text-slate-400 font-medium">Vence: {p.contractEnd}</span>
+                                    <span className="text-[10px] text-slate-400 font-medium">Contrato Vence: {p.contractEnd}</span>
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    {/* TARJETA 3: Fidelización M² */}
-                    <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-3xl p-5 text-white shadow-lg relative overflow-hidden">
+                    {/* TARJETA 3: Fidelización M² Club (Clickable para Canje) */}
+                    <div 
+                        onClick={() => setShowRedeemModal(true)}
+                        className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-3xl p-5 text-white shadow-lg relative overflow-hidden cursor-pointer hover:scale-[1.01] transition-transform"
+                    >
                         <i className="fa-solid fa-award absolute right-[-10px] bottom-[-10px] text-white/10 text-7xl"></i>
-                        <h4 className="font-black text-sm mb-1 uppercase tracking-tight">Fidelización M² Club</h4>
+                        <h4 className="font-black text-sm mb-1 uppercase tracking-tight">Fidelización M² Club (Canjear)</h4>
                         <p className="text-xs text-amber-100 leading-relaxed mb-3">
-                            Por mantener tus alquileres operando en DptoLibre acumulás metros cuadrados virtuales canjeables por refacciones o tokenización de inmuebles.
+                            Tenés {owner.m2Fidelizacion} metros cuadrados acumulados. Tocá aquí para canjearlos por refacciones o tokenización.
                         </p>
                         <div className="bg-white/20 p-3 rounded-2xl flex justify-between items-center text-xs font-black">
-                            <span>Total Acumulado:</span>
+                            <span>Metros Disponibles:</span>
                             <span className="text-sm bg-white text-amber-700 px-3 py-1 rounded-xl">{owner.m2Fidelizacion} M²</span>
                         </div>
                     </div>
@@ -249,12 +291,12 @@
                                     <h4 className="font-black text-slate-800 text-sm">{p.address}</h4>
                                     <p className="text-xs text-slate-500 font-medium">Inquilino: {p.tenant}</p>
                                 </div>
-                                <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-2.5 py-1 rounded-full uppercase">Vigente</span>
+                                <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-2.5 py-1 rounded-full uppercase">Blindado</span>
                             </div>
                             <div className="grid grid-cols-2 gap-3 pt-2">
                                 <div className="bg-slate-50 p-3 rounded-2xl text-center">
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Inicio</p>
-                                    <p className="text-xs font-black text-slate-700">05/04/2026</p>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Administración</p>
+                                    <p className="text-xs font-black text-slate-700">{p.admin}</p>
                                 </div>
                                 <div className="bg-slate-50 p-3 rounded-2xl text-center">
                                     <p className="text-[9px] font-bold text-slate-400 uppercase">Vencimiento</p>
@@ -262,7 +304,7 @@
                                 </div>
                             </div>
                             <button className="w-full border border-slate-200 py-3 rounded-2xl text-xs font-black text-slate-700 hover:bg-slate-50 uppercase tracking-wider transition-colors flex items-center justify-center gap-2">
-                                <i className="fa-solid fa-file-pdf text-red-500"></i> Descargar Contrato Legal (PDF)
+                                <i className="fa-solid fa-file-pdf text-red-500"></i> Descargar Certificado de Blindaje Legal
                             </button>
                         </div>
                     ))}
@@ -271,8 +313,14 @@
 
             const WalletView = () => (
                 <div className="p-4 space-y-4 pb-28 overflow-y-auto no-scrollbar flex-1 animate-in">
-                    <h2 className="font-black text-xl text-slate-800 mb-2 px-1">Tesorería y Movimientos</h2>
+                    <h2 className="font-black text-xl text-slate-800 mb-2 px-1">Tesorería y Rendimientos</h2>
                     
+                    <div className="bg-slate-900 rounded-3xl p-6 text-white shadow-xl mb-4">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rendimiento Fondo Monetario</p>
+                        <p className="text-3xl font-black text-emerald-400 mt-1">+${owner.interestYield.toLocaleString('es-AR')}</p>
+                        <p className="text-xs text-slate-300 mt-2">Tu dinero rinde automáticamente todos los días hábiles en DptoLibre T+0.</p>
+                    </div>
+
                     <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
                         <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
                             <span>Concepto / Propiedad</span>
@@ -285,17 +333,7 @@
                             </div>
                             <div className="text-right">
                                 <p className="font-black text-emerald-600 text-sm">$375.400</p>
-                                <p className="text-[9px] text-slate-400">Comisión e imp. desc.</p>
-                            </div>
-                        </div>
-                        <div className="p-4 flex justify-between items-center">
-                            <div>
-                                <p className="font-black text-slate-800 text-sm">Alquiler Abril 2026</p>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase">Av. Yrigoyen 850 • Recibo #A-0046</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="font-black text-emerald-600 text-sm">$335.000</p>
-                                <p className="text-[9px] text-slate-400">Comisión desc.</p>
+                                <p className="text-[9px] text-slate-400">100% Garantizado</p>
                             </div>
                         </div>
                     </div>
@@ -343,10 +381,104 @@
                                 </div>
                                 <h3 className="text-xl font-black text-slate-800 mb-1">Retiro Exitoso</h3>
                                 <p className="text-xs text-slate-500 mb-6">
-                                    Los fondos ($760.400) han sido transferidos a tu Alias bancario registrado. Estarán disponibles de inmediato.
+                                    Los fondos ($ {(owner.rentIncome + owner.interestYield).toLocaleString('es-AR')}) han sido transferidos a tu cuenta bancaria registrada con éxito.
                                 </p>
                                 <button onClick={() => setShowWithdrawModal(false)} className="w-full bg-[#0055DD] text-white py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg">
                                     Entendido
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal Canje de M² */}
+                    {showRedeemModal && (
+                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-6 text-center animate-in shadow-2xl relative">
+                                <button onClick={() => setShowRedeemModal(false)} className="absolute right-5 top-5 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+                                    <i className="fa-solid fa-xmark"></i>
+                                </button>
+                                <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                    <i className="fa-solid fa-award text-2xl"></i>
+                                </div>
+                                <h3 className="font-black text-slate-800 text-sm mb-1">Club de Fidelización M²</h3>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase mb-4">Tenés {owner.m2Fidelizacion} M² acumulados</p>
+                                
+                                <div className="space-y-3 mb-6 text-left">
+                                    <div onClick={() => { alert("¡Canje exitoso! Refacción solicitada para tu unidad."); setShowRedeemModal(false); }} className="p-3 bg-slate-50 hover:bg-blue-50 border rounded-2xl cursor-pointer transition-colors flex justify-between items-center">
+                                        <div>
+                                            <p className="text-xs font-black text-slate-800">Kit de Refacción / Pintura</p>
+                                            <p className="text-[9px] text-amber-600 font-bold uppercase">Costo: 50 M²</p>
+                                        </div>
+                                        <i className="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                                    </div>
+                                    <div onClick={() => { alert("¡Canje exitoso! Solicitud de tokenización en marcha."); setShowRedeemModal(false); }} className="p-3 bg-slate-50 hover:bg-blue-50 border rounded-2xl cursor-pointer transition-colors flex justify-between items-center">
+                                        <div>
+                                            <p className="text-xs font-black text-slate-800">Tokenización Inmobiliaria</p>
+                                            <p className="text-[9px] text-amber-600 font-bold uppercase">Costo: 100 M²</p>
+                                        </div>
+                                        <i className="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                                    </div>
+                                </div>
+
+                                <button onClick={() => setShowRedeemModal(false)} className="w-full bg-slate-200 text-slate-700 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest">
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal Detalle del Inquilino */}
+                    {showTenantModal && selectedTenant && (
+                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-6 text-center animate-in shadow-2xl relative">
+                                <button onClick={() => setShowTenantModal(false)} className="absolute right-5 top-5 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+                                    <i className="fa-solid fa-xmark"></i>
+                                </button>
+                                <div className="w-16 h-16 rounded-full border-2 border-emerald-500 p-1 bg-emerald-50 mx-auto mb-3 flex items-center justify-center text-emerald-600 font-black text-xl">
+                                    {selectedTenant.tenant[0]}
+                                </div>
+                                <h3 className="font-black text-slate-800 text-base mb-0.5">{selectedTenant.tenant}</h3>
+                                <p className="text-[10px] text-emerald-600 font-bold uppercase mb-4">Inquilino Verificado • Score: {selectedTenant.tenantScore} pts</p>
+                                
+                                <div className="bg-slate-50 p-4 rounded-2xl text-left space-y-2 mb-6 text-xs border">
+                                    <p><strong>Teléfono:</strong> {selectedTenant.tenantPhone}</p>
+                                    <p><strong>Email:</strong> {selectedTenant.tenantEmail}</p>
+                                    <p className="border-t pt-2"><strong>Historial:</strong> {selectedTenant.tenantHistory}</p>
+                                </div>
+
+                                <button onClick={() => setShowTenantModal(false)} className="w-full bg-[#0055DD] text-white py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg">
+                                    Cerrar Ficha
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal Cambiar Administrador */}
+                    {showAdminModal && selectedAdminProp && (
+                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-6 text-center animate-in shadow-2xl relative">
+                                <button onClick={() => setShowAdminModal(false)} className="absolute right-5 top-5 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+                                    <i className="fa-solid fa-xmark"></i>
+                                </button>
+                                <div className="w-12 h-12 bg-blue-50 text-[#0055DD] rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                    <i className="fa-solid fa-user-gear text-xl"></i>
+                                </div>
+                                <h3 className="font-black text-slate-800 text-sm mb-1">Administración de Unidad</h3>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase mb-4">{selectedAdminProp.address}</p>
+                                
+                                <div className="text-left space-y-3 mb-6 text-xs">
+                                    <div className="bg-slate-50 p-3 rounded-xl border">
+                                        <p className="text-[9px] text-slate-400 font-bold uppercase">Gestor actual</p>
+                                        <p className="font-black text-slate-800">{selectedAdminProp.admin}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase">Nuevo Administrador (Mail o Celular)</label>
+                                        <input type="text" placeholder="ej: admin@inmobiliaria.com" className="w-full bg-slate-50 border px-3 py-2.5 rounded-xl text-xs font-bold outline-none focus:border-[#0055DD]" />
+                                    </div>
+                                </div>
+
+                                <button onClick={() => { alert("Administrador actualizado con éxito. Se le envió notificación formal."); setShowAdminModal(false); }} className="w-full bg-[#0055DD] text-white py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg">
+                                    Actualizar Administrador
                                 </button>
                             </div>
                         </div>
@@ -380,7 +512,7 @@
                         </div>
                     )}
 
-                    {/* Modal Mi Perfil (Estilo Inquilino) */}
+                    {/* Modal Mi Perfil (Con opción de Agregar Propiedad) */}
                     {showProfileModal && (
                         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end">
                             <div className="bg-white w-full rounded-t-[2.5rem] p-6 animate-in shadow-2xl max-h-[85vh] overflow-y-auto">
@@ -412,6 +544,16 @@
                                             <span className="bg-emerald-100 text-emerald-700 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Activo</span>
                                         </div>
                                     ))}
+                                </div>
+
+                                {/* Botón Agregar Propiedad solicitado */}
+                                <div className="mb-6">
+                                    <button 
+                                        onClick={() => { alert("Abriendo asistente de carga para una nueva propiedad."); setShowProfileModal(false); }}
+                                        className="w-full border-2 border-dashed border-blue-200 bg-blue-50/50 hover:bg-blue-50 text-[#0055DD] p-4 rounded-2xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-wider transition-all"
+                                    >
+                                        <i className="fa-solid fa-plus-circle"></i> Agregar Nueva Propiedad
+                                    </button>
                                 </div>
 
                                 <div className="space-y-2 border-t pt-4">
