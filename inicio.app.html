@@ -66,34 +66,46 @@
             const [showWithdrawModal, setShowWithdrawModal] = useState(false);
             const [showQRModal, setShowQRModal] = useState(false);
             const [selectedProp, setSelectedProp] = useState(null);
+            const [showProfileModal, setShowProfileModal] = useState(false);
 
-            // Mock Data del Propietario (Fricción Cero - Claridad absoluta en cobros)
+            // Mock Data del Propietario (Fricción Cero - Con M² de Fidelización y Tickets de Mantenimiento)
             const owner = {
                 name: "Roberto Daer",
                 level: "Propietario Platinum",
                 liquidBalance: 760400,
                 pendingClearing: 150000,
                 yieldGenerated: 4820,
+                m2Fidelizacion: 142, // Metros cuadrados virtuales por fidelización de alquileres
                 properties: [
                     { 
                         id: 1, 
                         address: "Caseros 1230, 4B", 
                         tenant: "Juan Pérez", 
+                        tenantScore: 850,
+                        tenantHistory: "14 meses en término, cero mora",
                         status: "Blindado", 
                         rentAmount: 400000,
                         lastPayment: "05/04/2026",
                         contractEnd: "05/04/2027",
-                        admin: "Inmobiliaria Raíces"
+                        admin: "Inmobiliaria Raíces",
+                        features: "2 Dormitorios, Cochera, 75 m²",
+                        tickets: [
+                            { id: 882, title: "Reparación de grifería baño", status: "En Proceso (Autorizado)", date: "15/04/2026" }
+                        ]
                     },
                     { 
                         id: 2, 
                         address: "Av. Hipólito Yrigoyen 850", 
                         tenant: "María García", 
+                        tenantScore: 810,
+                        tenantHistory: "8 meses en término",
                         status: "Blindado", 
                         rentAmount: 360400,
                         lastPayment: "02/04/2026",
                         contractEnd: "01/09/2026",
-                        admin: "Gestiones del Sur"
+                        admin: "Gestiones del Sur",
+                        features: "1 Dormitorio, Balcón, 45 m²",
+                        tickets: []
                     }
                 ]
             };
@@ -101,7 +113,7 @@
             const TopBar = () => (
                 <div className="bg-slate-900 text-white p-6 rounded-b-[2.5rem] shadow-xl z-20">
                     <div className="flex justify-between items-center mb-5">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowProfileModal(true)}>
                             <div className="w-11 h-11 rounded-full bg-slate-800 border-2 border-emerald-400 overflow-hidden shadow-inner">
                                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Roberto" alt="Avatar" />
                             </div>
@@ -112,10 +124,16 @@
                                 </span>
                             </div>
                         </div>
-                        <button className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-slate-700 transition-colors relative">
-                            <i className="fa-solid fa-bell text-sm"></i>
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-400 rounded-full"></span>
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <div className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-xl text-center">
+                                <p className="text-[9px] font-black uppercase">M² Acumulados</p>
+                                <p className="text-xs font-black">{owner.m2Fidelizacion} M²</p>
+                            </div>
+                            <button className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-slate-700 transition-colors relative">
+                                <i className="fa-solid fa-bell text-sm"></i>
+                                <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-400 rounded-full"></span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             );
@@ -123,7 +141,7 @@
             const HomeView = () => (
                 <div className="p-4 space-y-4 pb-28 overflow-y-auto no-scrollbar flex-1 animate-in">
                     
-                    {/* TARJETA 1: Saldo Líquido y Retiro Inmediato (Cero Fricción) */}
+                    {/* TARJETA 1: Saldo Líquido y Retiro Inmediato */}
                     <div className="bg-slate-900 rounded-[2.5rem] p-6 text-white shadow-xl relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-full bg-emerald-500/10 pattern-dots opacity-30"></div>
                         <div className="relative z-10">
@@ -145,7 +163,7 @@
                         </div>
                     </div>
 
-                    {/* TARJETA 2: Estado de Activos (Escudos Verdes / Blindaje Activo) */}
+                    {/* TARJETA 2: Estado de Activos con Detalle de Inquilino y Tickets */}
                     <div className="space-y-3">
                         <div className="flex justify-between items-center px-1">
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mis Unidades Protegidas ({owner.properties.length})</h3>
@@ -160,22 +178,36 @@
                                         </div>
                                         <div>
                                             <h4 className="font-black text-slate-800 text-sm">{p.address}</h4>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Admin: {p.admin}</p>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{p.features} • Admin: {p.admin}</p>
                                         </div>
                                     </div>
                                     <span className="text-[9px] font-black bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full uppercase tracking-wider">Blindado</span>
                                 </div>
 
-                                <div className="bg-slate-50 p-3.5 rounded-2xl flex items-center justify-between">
-                                    <div>
-                                        <p className="text-[9px] font-black text-slate-400 uppercase">Inquilino</p>
-                                        <p className="text-xs font-black text-slate-700 mt-0.5">{p.tenant}</p>
+                                <div className="bg-slate-50 p-3.5 rounded-2xl space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-[9px] font-black text-slate-400 uppercase">Inquilino / Score</p>
+                                            <p className="text-xs font-black text-slate-700 mt-0.5">{p.tenant} <span className="text-emerald-600 font-bold ml-1">({p.tenantScore} pts)</span></p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase">Renta Mensual</p>
+                                            <p className="text-sm font-black text-emerald-600 mt-0.5">${p.rentAmount.toLocaleString('es-AR')}</p>
+                                        </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase">Renta Mensual</p>
-                                        <p className="text-sm font-black text-emerald-600 mt-0.5">${p.rentAmount.toLocaleString('es-AR')}</p>
-                                    </div>
+                                    <p className="text-[10px] text-slate-500 font-medium italic border-t border-slate-200 pt-1.5">Historial: {p.tenantHistory}</p>
                                 </div>
+
+                                {/* Tickets / Mantenimiento en curso (Solo Lectura para el Dueño) */}
+                                {p.tickets.length > 0 && (
+                                    <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-center justify-between text-xs">
+                                        <div className="flex items-center gap-2 text-amber-800">
+                                            <i className="fa-solid fa-wrench"></i>
+                                            <span className="font-bold">{p.tickets[0].title}</span>
+                                        </div>
+                                        <span className="text-[9px] font-black bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full uppercase">{p.tickets[0].status}</span>
+                                    </div>
+                                )}
 
                                 <div className="pt-1 flex items-center justify-between">
                                     <button 
@@ -184,22 +216,23 @@
                                     >
                                         <i className="fa-solid fa-qrcode"></i> Ver QR de Propiedad
                                     </button>
-                                    <span className="text-[10px] text-slate-400 font-medium">Vence contrato: {p.contractEnd}</span>
+                                    <span className="text-[10px] text-slate-400 font-medium">Vence: {p.contractEnd}</span>
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    {/* TARJETA 3: Blindaje Legal / Arbitraje */}
-                    <div className="bg-indigo-900 rounded-3xl p-5 text-white shadow-lg relative overflow-hidden">
-                        <i className="fa-solid fa-gavel absolute right-[-10px] bottom-[-10px] text-white/10 text-7xl"></i>
-                        <h4 className="font-black text-sm mb-1 uppercase tracking-tight">Arbitraje y Desalojo Express</h4>
-                        <p className="text-xs text-indigo-200 leading-relaxed mb-3">
-                            Tus contratos cuentan con garantía de arbitraje privado. Ante mora, el proceso se ejecuta en 45 días sin tribunales.
+                    {/* TARJETA 3: Fidelización M² */}
+                    <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-3xl p-5 text-white shadow-lg relative overflow-hidden">
+                        <i className="fa-solid fa-award absolute right-[-10px] bottom-[-10px] text-white/10 text-7xl"></i>
+                        <h4 className="font-black text-sm mb-1 uppercase tracking-tight">Fidelización M² Club</h4>
+                        <p className="text-xs text-amber-100 leading-relaxed mb-3">
+                            Por mantener tus alquileres operando en DptoLibre acumulás metros cuadrados virtuales canjeables por refacciones o tokenización de inmuebles.
                         </p>
-                        <button className="text-[10px] font-black bg-white/20 px-3.5 py-2 rounded-xl hover:bg-white/30 uppercase tracking-widest transition-colors">
-                            Ver Certificado Legal
-                        </button>
+                        <div className="bg-white/20 p-3 rounded-2xl flex justify-between items-center text-xs font-black">
+                            <span>Total Acumulado:</span>
+                            <span className="text-sm bg-white text-amber-700 px-3 py-1 rounded-xl">{owner.m2Fidelizacion} M²</span>
+                        </div>
                     </div>
 
                 </div>
@@ -343,6 +376,52 @@
                                 <button onClick={() => { alert("Código QR copiado al portapapeles."); setShowQRModal(false); }} className="w-full bg-[#0055DD] text-white py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg">
                                     Copiar Link de Acceso
                                 </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal Mi Perfil (Estilo Inquilino) */}
+                    {showProfileModal && (
+                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end">
+                            <div className="bg-white w-full rounded-t-[2.5rem] p-6 animate-in shadow-2xl max-h-[85vh] overflow-y-auto">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-base font-black text-slate-800 uppercase tracking-tight">Mi Perfil y Activos</h3>
+                                    <button onClick={() => setShowProfileModal(false)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+                                        <i className="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl mb-6 border">
+                                    <div className="w-16 h-16 rounded-full border-2 border-[#0055DD] p-1 bg-white overflow-hidden shadow-inner">
+                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Roberto" alt="Avatar" className="w-full h-full rounded-full" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-base font-black text-slate-800">{owner.name}</h4>
+                                        <p className="text-xs text-slate-500 font-medium">roberto.daer@email.com</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3 mb-6">
+                                    <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Mis Unidades Registradas</h4>
+                                    {owner.properties.map(p => (
+                                        <div key={p.id} className="p-4 bg-slate-50 border rounded-2xl flex justify-between items-center">
+                                            <div>
+                                                <p className="text-xs font-black text-slate-800">{p.address}</p>
+                                                <p className="text-[9px] text-slate-400 uppercase font-bold">Inquilino: {p.tenant}</p>
+                                            </div>
+                                            <span className="bg-emerald-100 text-emerald-700 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Activo</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="space-y-2 border-t pt-4">
+                                    <button className="w-full p-4 bg-slate-50 rounded-xl text-left text-xs font-bold text-slate-700 flex justify-between items-center">
+                                        <span>Cambiar Contraseña</span> <i className="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                                    </button>
+                                    <button className="w-full p-4 bg-red-50 rounded-xl text-left text-xs font-black text-red-600 flex justify-between items-center">
+                                        <span>Cancelar Cuenta</span> <i className="fa-solid fa-chevron-right text-xs text-red-300"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
