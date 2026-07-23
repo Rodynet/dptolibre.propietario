@@ -169,11 +169,11 @@
                 }
             };
 
-            // --- 1. LOGIN SCREEN CON VERSIÓN V2.8 ---
+            // --- 1. LOGIN SCREEN CON VERSIÓN V2.9 ---
             const LoginView = () => (
                 <div className="mobile-shell bg-white flex flex-col p-8 justify-center animate-in text-center relative">
                     <div className="absolute top-4 right-4 bg-slate-100 text-slate-500 text-[9px] font-black uppercase px-2 py-1 rounded-md tracking-wider">
-                        DptoLibre OS • Versión Propietario V2.8
+                        DptoLibre OS • Versión Propietario V2.9
                     </div>
                     <Logo />
                     <h1 className="text-xl font-black mt-6 text-[#0D1B4B] uppercase tracking-tighter">BIENVENIDO</h1>
@@ -326,7 +326,7 @@
                         <Icon name="home" size={32} />
                     </div>
                     <h2 className="text-2xl font-black text-[#0D1B4B] uppercase tracking-tighter mb-2">Tus Inmuebles</h2>
-                    <p className="text-slate-400 text-xs mb-8">Bienvenido. ¿Cuántas propiedades deseas que administren en tu cartera?</p>
+                    <p className="text-slate-400 text-xs mb-8">Bienvenido. ¿Cuántas propiedades deseas cargar para que administren en tu cartera?</p>
                     
                     <div className="flex gap-3 justify-center mb-8">
                         {[1, 2, 3, 4].map(num => (
@@ -491,7 +491,7 @@
                                     placeholder={
                                         chatStep === 0 ? "Escribe la dirección exacta..." : 
                                         chatStep === 1 ? "Ej: Cochera, 2 dormitorios..." : 
-                                        "Email o celular (WhatsApp) del administrador..."
+                                        "Ingresá el correo electrónico o celular (WhatsApp) del administrador..."
                                     }
                                     className="flex-1 bg-slate-50 border px-4 py-3 rounded-xl text-sm font-bold outline-none focus:border-[#0055DD]"
                                     autoFocus
