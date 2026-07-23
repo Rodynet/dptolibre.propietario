@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DptoLibre - Portal del Propietario</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --brand-blue: #0055DD;
+            --brand-dark: #0D1B4B;
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #cbd5e1;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden;
+        }
+
+        .mobile-shell {
+            width: 100%;
+            height: 100vh;
+            max-width: 414px;
+            background: #F8FAFC;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.2);
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeIn 0.4s ease-out; }
+
+        .pattern-dots {
+            background-image: radial-gradient(currentColor 1px, transparent 1px);
+            background-size: calc(100% / 15) calc(100% / 15);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        function OwnerHomeApp() {
+            const [activeTab, setActiveTab] = useState('home');
+            const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+            const [showQRModal, setShowQRModal] = useState(false);
+            const [selectedProp, setSelectedProp] = useState(null);
+
+            // Mock Data del Propietario (Fricción Cero - Claridad absoluta en cobros)
+            const owner = {
+                name: "Roberto Daer",
+                level: "Propietario Platinum",
+                liquidBalance: 760400,
+                pendingClearing: 150000,
+                yieldGenerated: 4820,
+                properties: [
+                    { 
+                        id: 1, 
+                        address: "Caseros 1230, 4B", 
+                        tenant: "Juan Pérez", 
+                        status: "Blindado", 
+                        rentAmount: 400000,
+                        lastPayment: "05/04/2026",
+                        contractEnd: "05/04/2027",
+                        admin: "Inmobiliaria Raíces"
+                    },
+                    { 
+                        id: 2, 
+                        address: "Av. Hipólito Yrigoyen 850", 
+                        tenant: "María García", 
+                        status: "Blindado", 
+                        rentAmount: 360400,
+                        lastPayment: "02/04/2026",
+                        contractEnd: "01/09/2026",
+                        admin: "Gestiones del Sur"
+                    }
+                ]
+            };
+
+            const TopBar = () => (
+                <div className="bg-slate-900 text-white p-6 rounded-b-[2.5rem] shadow-xl z-20">
+                    <div className="flex justify-between items-center mb-5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-full bg-slate-800 border-2 border-emerald-400 overflow-hidden shadow-inner">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Roberto" alt="Avatar" />
+                            </div>
+                            <div>
+                                <h2 className="font-black text-base leading-tight">Hola, {owner.name}</h2>
+                                <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 w-max mt-0.5 border border-emerald-500/30">
+                                    <i className="fa-solid fa-shield-halved text-[9px]"></i> {owner.level}
+                                </span>
+                            </div>
+                        </div>
+                        <button className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-slate-700 transition-colors relative">
+                            <i className="fa-solid fa-bell text-sm"></i>
+                            <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-400 rounded-full"></span>
+                        </button>
+                    </div>
+                </div>
+            );
+
+            const HomeView = () => (
+                <div className="p-4 space-y-4 pb-28 overflow-y-auto no-scrollbar flex-1 animate-in">
+                    
+                    {/* TARJETA 1: Saldo Líquido y Retiro Inmediato (Cero Fricción) */}
+                    <div className="bg-slate-900 rounded-[2.5rem] p-6 text-white shadow-xl relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-full bg-emerald-500/10 pattern-dots opacity-30"></div>
+                        <div className="relative z-10">
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Saldo Líquido Disponible</span>
+                                <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                    <i className="fa-solid fa-arrow-trend-up"></i> +${owner.yieldGenerated} hoy
+                                </span>
+                            </div>
+                            <div className="text-4xl font-black tracking-tighter mb-5">${owner.liquidBalance.toLocaleString('es-AR')}</div>
+                            
+                            <button 
+                                onClick={() => setShowWithdrawModal(true)}
+                                className="w-full bg-emerald-500 text-slate-900 font-black py-4 rounded-2xl hover:bg-emerald-400 flex justify-center items-center gap-2 transition-transform active:scale-95 shadow-lg shadow-emerald-500/20 text-xs uppercase tracking-widest"
+                            >
+                                <i className="fa-solid fa-building-columns"></i>
+                                Retirar a mi Cuenta Bancaria
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* TARJETA 2: Estado de Activos (Escudos Verdes / Blindaje Activo) */}
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center px-1">
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mis Unidades Protegidas ({owner.properties.length})</h3>
+                        </div>
+
+                        {owner.properties.map(p => (
+                            <div key={p.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+                                            <i className="fa-solid fa-shield-halved text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-black text-slate-800 text-sm">{p.address}</h4>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Admin: {p.admin}</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-[9px] font-black bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full uppercase tracking-wider">Blindado</span>
+                                </div>
+
+                                <div className="bg-slate-50 p-3.5 rounded-2xl flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[9px] font-black text-slate-400 uppercase">Inquilino</p>
+                                        <p className="text-xs font-black text-slate-700 mt-0.5">{p.tenant}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase">Renta Mensual</p>
+                                        <p className="text-sm font-black text-emerald-600 mt-0.5">${p.rentAmount.toLocaleString('es-AR')}</p>
+                                    </div>
+                                </div>
+
+                                <div className="pt-1 flex items-center justify-between">
+                                    <button 
+                                        onClick={() => { setSelectedProp(p); setShowQRModal(true); }}
+                                        className="text-[10px] font-black text-[#0055DD] flex items-center gap-1.5 bg-blue-50 px-3 py-2 rounded-xl hover:bg-blue-100 transition-colors"
+                                    >
+                                        <i className="fa-solid fa-qrcode"></i> Ver QR de Propiedad
+                                    </button>
+                                    <span className="text-[10px] text-slate-400 font-medium">Vence contrato: {p.contractEnd}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* TARJETA 3: Blindaje Legal / Arbitraje */}
+                    <div className="bg-indigo-900 rounded-3xl p-5 text-white shadow-lg relative overflow-hidden">
+                        <i className="fa-solid fa-gavel absolute right-[-10px] bottom-[-10px] text-white/10 text-7xl"></i>
+                        <h4 className="font-black text-sm mb-1 uppercase tracking-tight">Arbitraje y Desalojo Express</h4>
+                        <p className="text-xs text-indigo-200 leading-relaxed mb-3">
+                            Tus contratos cuentan con garantía de arbitraje privado. Ante mora, el proceso se ejecuta en 45 días sin tribunales.
+                        </p>
+                        <button className="text-[10px] font-black bg-white/20 px-3.5 py-2 rounded-xl hover:bg-white/30 uppercase tracking-widest transition-colors">
+                            Ver Certificado Legal
+                        </button>
+                    </div>
+
+                </div>
+            );
+
+            const ContractsView = () => (
+                <div className="p-4 space-y-4 pb-28 overflow-y-auto no-scrollbar flex-1 animate-in">
+                    <h2 className="font-black text-xl text-slate-800 mb-2 px-1">Contratos Vigentes</h2>
+                    
+                    {owner.properties.map(p => (
+                        <div key={p.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-3">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h4 className="font-black text-slate-800 text-sm">{p.address}</h4>
+                                    <p className="text-xs text-slate-500 font-medium">Inquilino: {p.tenant}</p>
+                                </div>
+                                <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-2.5 py-1 rounded-full uppercase">Vigente</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 pt-2">
+                                <div className="bg-slate-50 p-3 rounded-2xl text-center">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Inicio</p>
+                                    <p className="text-xs font-black text-slate-700">05/04/2026</p>
+                                </div>
+                                <div className="bg-slate-50 p-3 rounded-2xl text-center">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Vencimiento</p>
+                                    <p className="text-xs font-black text-slate-700">{p.contractEnd}</p>
+                                </div>
+                            </div>
+                            <button className="w-full border border-slate-200 py-3 rounded-2xl text-xs font-black text-slate-700 hover:bg-slate-50 uppercase tracking-wider transition-colors flex items-center justify-center gap-2">
+                                <i className="fa-solid fa-file-pdf text-red-500"></i> Descargar Contrato Legal (PDF)
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            );
+
+            const WalletView = () => (
+                <div className="p-4 space-y-4 pb-28 overflow-y-auto no-scrollbar flex-1 animate-in">
+                    <h2 className="font-black text-xl text-slate-800 mb-2 px-1">Tesorería y Movimientos</h2>
+                    
+                    <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <span>Concepto / Propiedad</span>
+                            <span>Monto Neto</span>
+                        </div>
+                        <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+                            <div>
+                                <p className="font-black text-slate-800 text-sm">Alquiler Abril 2026</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase">Caseros 1230 • Recibo #A-0045</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="font-black text-emerald-600 text-sm">$375.400</p>
+                                <p className="text-[9px] text-slate-400">Comisión e imp. desc.</p>
+                            </div>
+                        </div>
+                        <div className="p-4 flex justify-between items-center">
+                            <div>
+                                <p className="font-black text-slate-800 text-sm">Alquiler Abril 2026</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase">Av. Yrigoyen 850 • Recibo #A-0046</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="font-black text-emerald-600 text-sm">$335.000</p>
+                                <p className="text-[9px] text-slate-400">Comisión desc.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="mobile-shell">
+                    {/* Notch */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-6 bg-slate-900 rounded-b-2xl z-[150] flex items-center justify-center gap-1.5 shadow-sm">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/20"></div>
+                        <div className="w-8 h-1 bg-white/20 rounded-full"></div>
+                    </div>
+
+                    <TopBar />
+
+                    <div className="flex-1 overflow-hidden flex flex-col">
+                        {activeTab === 'home' && <HomeView />}
+                        {activeTab === 'contracts' && <ContractsView />}
+                        {activeTab === 'wallet' && <WalletView />}
+                    </div>
+
+                    {/* Bottom Navigation */}
+                    <nav className="absolute bottom-0 w-full bg-white border-t border-slate-200 px-6 py-4 flex justify-around items-center z-40 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
+                        <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center transition-colors ${activeTab === 'home' ? 'text-[#0055DD]' : 'text-slate-400'}`}>
+                            <i className="fa-solid fa-house text-lg"></i>
+                            <span className="text-[9px] font-black mt-1 uppercase tracking-tighter">Inicio</span>
+                        </button>
+                        <button onClick={() => setActiveTab('contracts')} className={`flex flex-col items-center transition-colors ${activeTab === 'contracts' ? 'text-[#0055DD]' : 'text-slate-400'}`}>
+                            <i className="fa-solid fa-file-invoice text-lg"></i>
+                            <span className="text-[9px] font-black mt-1 uppercase tracking-tighter">Contratos</span>
+                        </button>
+                        <button onClick={() => setActiveTab('wallet')} className={`flex flex-col items-center transition-colors ${activeTab === 'wallet' ? 'text-[#0055DD]' : 'text-slate-400'}`}>
+                            <i className="fa-solid fa-wallet text-lg"></i>
+                            <span className="text-[9px] font-black mt-1 uppercase tracking-tighter">Dinero</span>
+                        </button>
+                    </nav>
+
+                    {/* Modal Retiro de Fondos */}
+                    {showWithdrawModal && (
+                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-6 text-center animate-in shadow-2xl relative overflow-hidden">
+                                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+                                    <i className="fa-solid fa-check text-2xl text-emerald-600"></i>
+                                </div>
+                                <h3 className="text-xl font-black text-slate-800 mb-1">Retiro Exitoso</h3>
+                                <p className="text-xs text-slate-500 mb-6">
+                                    Los fondos ($760.400) han sido transferidos a tu Alias bancario registrado. Estarán disponibles de inmediato.
+                                </p>
+                                <button onClick={() => setShowWithdrawModal(false)} className="w-full bg-[#0055DD] text-white py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg">
+                                    Entendido
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal QR Propiedad */}
+                    {showQRModal && selectedProp && (
+                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-6 text-center animate-in shadow-2xl relative">
+                                <button onClick={() => setShowQRModal(false)} className="absolute right-5 top-5 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+                                    <i className="fa-solid fa-xmark"></i>
+                                </button>
+                                <div className="w-12 h-12 bg-blue-50 text-[#0055DD] rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                    <i className="fa-solid fa-qrcode text-2xl"></i>
+                                </div>
+                                <h3 className="font-black text-slate-800 text-sm mb-1">{selectedProp.address}</h3>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase mb-4">Código QR de la Propiedad</p>
+                                
+                                <div className="w-48 h-48 bg-slate-100 border-4 border-slate-200 rounded-3xl mx-auto flex items-center justify-center mb-6">
+                                    <i className="fa-solid fa-qrcode text-8xl text-slate-800"></i>
+                                </div>
+
+                                <p className="text-[11px] text-slate-600 font-medium mb-6 leading-relaxed">
+                                    Compartí este QR con tu inquilino o con tu administrador para que puedan dar de alta o vincular la unidad instantáneamente.
+                                </p>
+
+                                <button onClick={() => { alert("Código QR copiado al portapapeles."); setShowQRModal(false); }} className="w-full bg-[#0055DD] text-white py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg">
+                                    Copiar Link de Acceso
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<OwnerHomeApp />);
+    </script>
+</body>
+</html>
