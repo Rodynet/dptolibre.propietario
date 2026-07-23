@@ -101,7 +101,7 @@
             const [sharedAdmin, setSharedAdmin] = useState(null); 
             
             // Chat IA y datos recolectados
-            const [chatStep, setChatStep] = useState(0); // 0: Dirección, 1: Características, 2: Pregunta Admin, 3: Input Admin, 4: Resultado Admin
+            const [chatStep, setChatStep] = useState(0); // 0: Dirección, 1: Características, 2: Pregunta Admin (Botones), 3: Input Admin, 4: Resultado Admin
             const [isTyping, setIsTyping] = useState(false);
             const [chatInput, setChatInput] = useState("");
             const [propertiesList, setPropertiesList] = useState([]);
@@ -127,7 +127,7 @@
 
             const handleChatSend = (customVal) => {
                 const val = customVal !== undefined ? customVal : chatInput.trim();
-                if (!val) return;
+                if (!val && chatStep !== 2) return;
                 if (customVal === undefined) setChatInput("");
 
                 if (chatStep === 0) {
@@ -135,7 +135,7 @@
                     advanceChat(1);
                 } else if (chatStep === 1) {
                     setCurrentProp(p => ({ ...p, features: val }));
-                    advanceChat(2); // Muestra mensaje de éxito y avanza al paso de ingreso del administrador (paso 3)
+                    advanceChat(2); // Muestra mensaje de éxito y botones SI/NO de administrador
                 } else if (chatStep === 3) {
                     setCurrentProp(p => ({ ...p, adminContact: val }));
                     setIsTyping(true);
@@ -169,11 +169,11 @@
                 }
             };
 
-            // --- 1. LOGIN SCREEN CON VERSIÓN V2.7 ---
+            // --- 1. LOGIN SCREEN CON VERSIÓN V2.8 ---
             const LoginView = () => (
                 <div className="mobile-shell bg-white flex flex-col p-8 justify-center animate-in text-center relative">
                     <div className="absolute top-4 right-4 bg-slate-100 text-slate-500 text-[9px] font-black uppercase px-2 py-1 rounded-md tracking-wider">
-                        DptoLibre OS • Versión Propietario V2.7
+                        DptoLibre OS • Versión Propietario V2.8
                     </div>
                     <Logo />
                     <h1 className="text-xl font-black mt-6 text-[#0D1B4B] uppercase tracking-tighter">BIENVENIDO</h1>
@@ -366,7 +366,7 @@
                 </div>
             );
 
-            // --- 6. CHAT IA - CARGA DE PROPIEDAD Y ADMINISTRADOR CON BÚSQUEDA Y PREGUNTA CLARA ---
+            // --- 6. CHAT IA - CARGA DE PROPIEDAD Y ADMINISTRADOR CON BÚSQUEDA Y BOTONES CLAROS ---
             const ChatPropiedadView = () => (
                 <div className="mobile-shell bg-slate-50 flex flex-col animate-in">
                     <header className="p-4 bg-white border-b flex items-center justify-between">
@@ -413,11 +413,28 @@
 
                         {chatStep >= 2 && <div className="user-bubble animate-bubble">{currentProp.features}</div>}
                         
-                        {/* PREGUNTA ADMINISTRADOR CONCRETA EN COLOR AZUL COMO LA DIRECCIÓN */}
-                        {chatStep >= 2 && !isTyping && (
-                            <div className="bot-bubble animate-bubble space-y-2">
+                        {/* PREGUNTA ADMINISTRADOR CON BOTONES CLAROS (SI/NO) */}
+                        {chatStep === 2 && !isTyping && (
+                            <div className="bot-bubble animate-bubble space-y-3">
                                 <p>Propiedad asociada con éxito a tu perfil de dueño.</p>
-                                <p className="text-[#0055DD] font-bold italic">¿Querés permitirle a un administrador manejar esta unidad? Ingresá su correo electrónico o celular (WhatsApp).</p>
+                                <p className="text-[#0055DD] font-bold italic">¿Querés permitirle a un administrador manejar esta unidad?</p>
+                                <div className="flex gap-2 pt-2">
+                                    <button 
+                                        onClick={() => {
+                                            setCurrentProp(p => ({ ...p, adminContact: 'Sin administrador' }));
+                                            saveCurrentPropertyAndContinue();
+                                        }} 
+                                        className="flex-1 py-3 bg-slate-200 text-slate-700 font-black rounded-xl text-xs uppercase hover:bg-slate-300 transition-colors"
+                                    >
+                                        No, por ahora
+                                    </button>
+                                    <button 
+                                        onClick={() => advanceChat(3)} 
+                                        className="flex-1 py-3 bg-[#0055DD] text-white font-black rounded-xl text-xs uppercase shadow-md hover:bg-blue-700 transition-colors"
+                                    >
+                                        Sí, agregar admin
+                                    </button>
+                                </div>
                             </div>
                         )}
 
@@ -460,7 +477,7 @@
                         )}
                     </div>
 
-                    {/* Input Chat Conversacional Activo en Pasos 0, 1 y 3 */}
+                    {/* Input Chat Conversacional Activo solo en Pasos 0, 1 y 3 */}
                     {(chatStep === 0 || chatStep === 1 || chatStep === 3) && !isTyping && (
                         <footer className="p-4 bg-white border-t sticky bottom-0 z-20">
                             <div className="flex gap-2">
@@ -469,14 +486,7 @@
                                     value={chatInput}
                                     onChange={(e) => setChatInput(e.target.value)}
                                     onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            if (chatStep === 2) {
-                                                setCurrentProp(p => ({ ...p, adminContact: chatInput.trim() }));
-                                                handleChatSend(chatInput.trim());
-                                            } else {
-                                                handleChatSend();
-                                            }
-                                        }
+                                        if (e.key === 'Enter') handleChatSend();
                                     }}
                                     placeholder={
                                         chatStep === 0 ? "Escribe la dirección exacta..." : 
@@ -487,14 +497,7 @@
                                     autoFocus
                                 />
                                 <button 
-                                    onClick={() => {
-                                        if (chatStep === 2) {
-                                            setCurrentProp(p => ({ ...p, adminContact: chatInput.trim() }));
-                                            handleChatSend(chatInput.trim());
-                                        } else {
-                                            handleChatSend();
-                                        }
-                                    }} 
+                                    onClick={() => handleChatSend()} 
                                     className="bg-[#0055DD] text-white w-12 h-12 rounded-xl flex items-center justify-center shadow-md active:scale-95 transition-transform shrink-0"
                                 >
                                     <Icon name="send" size={18} />
